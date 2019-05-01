@@ -16,6 +16,20 @@ const config = {
   contracts_build_directory: fixturesDirectory
 };
 
+// const compilationConfig =  {
+//   contracts_directory: path.join(__dirname, "compilationSources"),
+//   contracts_build_directory: path.join(__dirname, "build"),
+//   all: true
+// } 
+let compilationConfig;
+beforeAll(() => {
+  compilationConfig =  {
+    contracts_directory: "./test/compilationSources",
+    contracts_build_directory: "./test/build", 
+    all: true
+  } 
+});
+
 const db = new TruffleDB(config);
 const Migrations = require(path.join(fixturesDirectory, "Migrations.json"));
 
@@ -32,7 +46,9 @@ query GetWorkspaceBytecode($id: ID!) {
 it("loads create bytecodes", async () => {
   // arrange
   const expectedId = generateId({ bytes: Migrations.bytecode })
-  const loader = new ArtifactsLoader(db);
+  const loader = new ArtifactsLoader(db, {});
+
+  
 
   // act
   await loader.load();
@@ -68,7 +84,7 @@ it("loads contract sources", async () => {
     contents: Migrations.source,
     sourcePath: Migrations.sourcePath
   });
-  const loader = new ArtifactsLoader(db);
+  const loader = new ArtifactsLoader(db, {});
 
   // act
   await loader.load();
@@ -86,3 +102,34 @@ it("loads contract sources", async () => {
 
   expect(contents).toEqual(Migrations.source);
 });
+
+const GetWorkspaceCompilation: boolean = gql`
+query getWorkspaceCompilation($id: ID!) {
+  workspace {
+    compilation(id: $id) {
+      id
+      name
+      compiler {
+        name
+        version
+      }
+      sources {
+        contents
+        sourcePath
+      }
+      ast {
+        json
+      }
+    }
+  }
+}
+`;
+
+it("loads compilations", async () => {
+  
+  const loader = new ArtifactsLoader(db, compilationConfig);
+
+ 
+  await loader.load();
+
+})
